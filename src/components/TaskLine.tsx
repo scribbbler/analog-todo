@@ -1,7 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useState, useRef, useEffect } from 'react';
-import type { Task } from '../types';
+import { SIGNAL_GLYPHS, type Task } from '../types';
 import Signal from './Signal';
 
 interface TaskLineProps {
@@ -58,9 +58,7 @@ export default function TaskLine({ task, lineNum, onUpdate, readonly }: TaskLine
       )}
       {readonly && (
         <span className="w-5 h-5 flex items-center justify-center text-sm shrink-0">
-          {task.signal !== 'empty'
-            ? (['●','◐','→','◇','✕'][['complete','in-progress','delegated','appointment','cancel'].indexOf(task.signal)] ?? '○')
-            : '○'}
+          {SIGNAL_GLYPHS[task.signal]}
         </span>
       )}
       {editing && !readonly ? (

@@ -51,9 +51,9 @@ export default function Card({ card, onUpdate, readonly }: CardProps) {
     <div
       ref={setNodeRef}
       className={`card-surface ${CARD_BG[card.type]} rounded-lg shadow-md
-                  p-4 pt-3 flex flex-col aspect-[3/5] w-64
-                  transition-transform duration-200
-                  ${readonly ? '' : 'hover:-translate-y-1 hover:shadow-lg'}`}
+                  p-4 pt-3 flex flex-col aspect-[3/5] w-full
+                  transition-all duration-200
+                  ${readonly ? 'pointer-events-none' : 'hover:-translate-y-1 hover:shadow-lg'}`}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-2">

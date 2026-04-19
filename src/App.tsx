@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DndContext, type DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
-import type { AppState, CardData, CardType } from './types';
-import { loadState, saveState, createCard } from './store';
+import type { AppState, CardData, CardType, Task } from './types';
+import { loadState, saveState, createCard, createTask } from './store';
 import CardHolder from './components/CardHolder';
 import Archive from './components/Archive';
+import CarryOver from './components/CarryOver';
 
 function findCardAndIndex(
   state: AppState,
@@ -17,9 +18,14 @@ function findCardAndIndex(
   return null;
 }
 
+function isUnfinished(task: Task): boolean {
+  return task.text.trim() !== '' && task.signal !== 'complete' && task.signal !== 'cancel';
+}
+
 export default function App() {
   const [state, setState] = useState<AppState>(loadState);
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const [carryOverTasks, setCarryOverTasks] = useState<Task[] | null>(null);
 
   useEffect(() => { saveState(state); }, [state]);
 
@@ -32,12 +38,60 @@ export default function App() {
   }, []);
 
   const handleNewToday = useCallback(() => {
-    setState((s) => ({
-      ...s,
-      archive: [s.today, ...s.archive],
-      today: createCard('today'),
-    }));
-  }, []);
+    const unfinished = state.today.tasks.filter(isUnfinished);
+    if (unfinished.length > 0) {
+      setCarryOverTasks(unfinished);
+    } else {
+      // No unfinished tasks — just archive and start fresh
+      setState((s) => ({
+        ...s,
+        archive: [s.today, ...s.archive],
+        today: createCard('today'),
+      }));
+    }
+  }, [state.today]);
+
+  const handleCarryOverConfirm = useCallback(
+    (decisions: Map<string, 'today' | 'next' | 'drop'>) => {
+      setState((s) => {
+        const toToday: Task[] = [];
+        const toNext: Task[] = [];
+
+        for (const [id, dest] of decisions) {
+          const task = s.today.tasks.find((t) => t.id === id);
+          if (!task) continue;
+          // Reset signal to empty for carried-over tasks
+          const fresh = { ...task, id: crypto.randomUUID(), signal: 'empty' as const };
+          if (dest === 'today') toToday.push(fresh);
+          else if (dest === 'next') toNext.push(fresh);
+          // 'drop' = leave in archive only
+        }
+
+        // Build new Today card: carried tasks + empty lines to fill to 10
+        const newToday = createCard('today');
+        const emptySlots = Math.max(0, 10 - toToday.length);
+        newToday.tasks = [
+          ...toToday,
+          ...Array.from({ length: emptySlots }, () => createTask()),
+        ].slice(0, 10);
+
+        // Append carried tasks to Next card
+        const updatedNext = {
+          ...s.next,
+          tasks: [...s.next.tasks, ...toNext],
+        };
+
+        return {
+          ...s,
+          archive: [s.today, ...s.archive],
+          today: newToday,
+          next: updatedNext,
+        };
+      });
+      setCarryOverTasks(null);
+    },
+    [],
+  );
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
@@ -49,7 +103,6 @@ export default function App() {
 
       const next = { ...prev };
 
-      // Determine destination card type
       let destType: CardType;
       const overInCard = findCardAndIndex(prev, String(over.id));
 
@@ -61,7 +114,6 @@ export default function App() {
         return prev;
       }
 
-      // Same card: reorder
       if (source.cardType === destType) {
         const destIdx = overInCard ? overInCard.taskIndex : source.taskIndex;
         const reordered = arrayMove(
@@ -73,7 +125,6 @@ export default function App() {
         return next;
       }
 
-      // Different cards: move task
       if (destType === 'today' && prev.today.tasks.length >= 10) return prev;
 
       const task = prev[source.cardType].tasks[source.taskIndex];
@@ -104,6 +155,13 @@ export default function App() {
         open={archiveOpen}
         onToggle={() => setArchiveOpen((o) => !o)}
       />
+      {carryOverTasks && (
+        <CarryOver
+          tasks={carryOverTasks}
+          onConfirm={handleCarryOverConfirm}
+          onCancel={() => setCarryOverTasks(null)}
+        />
+      )}
     </div>
   );
 }

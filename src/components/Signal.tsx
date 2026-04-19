@@ -15,9 +15,9 @@ export default function Signal({ value, onChange }: SignalProps) {
   return (
     <button
       onClick={handleClick}
-      className="signal-btn w-5 h-5 flex items-center justify-center text-sm
+      className="signal-btn w-7 h-7 flex items-center justify-center text-lg
                  cursor-pointer select-none shrink-0 transition-transform
-                 hover:scale-125 active:scale-95"
+                 hover:scale-110 active:scale-95 text-stone-400"
       aria-label={`Status: ${value}. Click to change.`}
     >
       <span key={value} className="signal-stamp inline-block">

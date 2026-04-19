@@ -6,12 +6,11 @@ import Signal from './Signal';
 
 interface TaskLineProps {
   task: Task;
-  lineNum: number;
   onUpdate: (task: Task) => void;
   readonly?: boolean;
 }
 
-export default function TaskLine({ task, lineNum, onUpdate, readonly }: TaskLineProps) {
+export default function TaskLine({ task, onUpdate, readonly }: TaskLineProps) {
   const [editing, setEditing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -36,51 +35,49 @@ export default function TaskLine({ task, lineNum, onUpdate, readonly }: TaskLine
       ref={setNodeRef}
       style={style}
       {...attributes}
-      className="flex items-center gap-1.5 h-8 group"
+      {...(!readonly ? listeners : {})}
+      className={`flex items-center gap-3 py-2.5 group
+                  ${!readonly ? 'cursor-grab active:cursor-grabbing' : ''}`}
     >
-      {!readonly && (
-        <span
-          {...listeners}
-          className="cursor-grab text-[10px] text-stone-300 opacity-0
-                     group-hover:opacity-100 transition-opacity select-none"
-        >
-          ⠿
-        </span>
-      )}
-      <span className="text-[10px] text-stone-400 w-4 text-right shrink-0 tabular-nums">
-        {lineNum}
-      </span>
-      {!readonly && (
+      {/* Signal circle */}
+      {!readonly ? (
         <Signal
           value={task.signal}
           onChange={(signal) => onUpdate({ ...task, signal })}
         />
-      )}
-      {readonly && (
-        <span className="w-5 h-5 flex items-center justify-center text-sm shrink-0">
+      ) : (
+        <span className="w-7 h-7 flex items-center justify-center text-lg shrink-0 text-stone-400">
           {SIGNAL_GLYPHS[task.signal]}
         </span>
       )}
-      {editing && !readonly ? (
-        <input
-          ref={inputRef}
-          className="flex-1 bg-transparent outline-none font-handwritten text-sm
-                     text-stone-800 border-b border-stone-200 focus:border-stone-400"
-          value={task.text}
-          onChange={(e) => onUpdate({ ...task, text: e.target.value })}
-          onBlur={() => setEditing(false)}
-          onKeyDown={(e) => { if (e.key === 'Enter') setEditing(false); }}
-        />
-      ) : (
-        <span
-          onClick={() => !readonly && setEditing(true)}
-          className={`flex-1 font-handwritten text-sm cursor-text min-h-[1.25rem]
-                      ${isComplete ? 'line-through-hand text-stone-400' : ''}
-                      ${isCancelled ? 'text-stone-300' : 'text-stone-800'}`}
-        >
-          {task.text || (!readonly ? '' : '')}
-        </span>
-      )}
+
+      {/* Task text with ruled line underneath */}
+      <div className="flex-1 min-w-0">
+        {editing && !readonly ? (
+          <input
+            ref={inputRef}
+            className="w-full bg-transparent outline-none font-handwritten text-lg
+                       text-stone-700 pb-1 border-b border-stone-300"
+            value={task.text}
+            onChange={(e) => onUpdate({ ...task, text: e.target.value })}
+            onBlur={() => setEditing(false)}
+            onKeyDown={(e) => { if (e.key === 'Enter') setEditing(false); }}
+          />
+        ) : (
+          <div
+            onClick={() => !readonly && setEditing(true)}
+            className="pb-1 border-b border-stone-300 min-h-[1.75rem] cursor-text"
+          >
+            <span
+              className={`font-handwritten text-lg
+                          ${isComplete ? 'line-through-hand text-stone-400' : ''}
+                          ${isCancelled ? 'text-stone-300' : 'text-stone-700'}`}
+            >
+              {task.text}
+            </span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -11,9 +11,9 @@ interface CardProps {
 }
 
 const CARD_BG: Record<string, string> = {
-  today: 'bg-white',
-  next: 'bg-[#FAF6EF]',
-  someday: 'bg-[#E8DCC8]',
+  today: 'bg-[#F8F6F3]',
+  next: 'bg-[#F2EDE4]',
+  someday: 'bg-[#E0D5C1]',
 };
 
 const CARD_LABEL: Record<string, string> = {
@@ -37,55 +37,57 @@ export default function Card({ card, onUpdate, readonly }: CardProps) {
     onUpdate({ ...card, tasks: [...card.tasks, createTask()] });
   };
 
-  const ratingDots = [1, 2, 3].map((n) => (
-    <button
-      key={n}
-      onClick={() => !readonly && onUpdate({ ...card, rating: card.rating === n ? n - 1 : n })}
-      className="w-3 h-3 rounded-full border border-stone-400 transition-colors cursor-pointer"
-      style={{ backgroundColor: n <= card.rating ? '#B8860B' : 'transparent' }}
-      aria-label={`Rate ${n}`}
-    />
-  ));
-
   return (
     <div
       ref={setNodeRef}
-      className={`card-surface ${CARD_BG[card.type]} rounded-lg shadow-md
-                  p-4 pt-3 flex flex-col aspect-[3/5] w-full
+      className={`card-surface ${CARD_BG[card.type]} rounded-2xl
+                  px-6 py-5 flex flex-col aspect-[3/5] w-full
                   transition-all duration-200
                   ${readonly ? 'pointer-events-none' : 'hover:-translate-y-1 hover:shadow-lg'}`}
     >
       {/* Header */}
-      <div className="flex items-start justify-between mb-2">
-        <span className="text-[10px] uppercase tracking-widest text-stone-400 font-medium">
+      <div className="flex items-start justify-between mb-4">
+        <span className="text-xl font-medium text-stone-500 tracking-wide">
           {CARD_LABEL[card.type]}
         </span>
-        <div className="flex flex-col items-end gap-1.5">
-          <div className="flex gap-1">{ratingDots}</div>
+        <div className="flex items-start gap-2">
           {!readonly ? (
             <input
-              className="text-right text-xs text-stone-500 bg-transparent outline-none
-                         w-24 placeholder:text-stone-300 font-sans"
+              className="text-right text-sm text-stone-400 bg-transparent outline-none
+                         w-28 placeholder:text-stone-300 font-sans mt-1
+                         border-b border-stone-300"
               value={card.title}
               onChange={(e) => onUpdate({ ...card, title: e.target.value })}
-              placeholder="title"
+              placeholder=""
             />
           ) : (
             card.title && (
-              <span className="text-xs text-stone-500">{card.title}</span>
+              <span className="text-sm text-stone-400 mt-1">{card.title}</span>
             )
           )}
+          {/* Vertical rating dots */}
+          <div className="flex flex-col gap-1.5 mt-0.5">
+            {[1, 2, 3].map((n) => (
+              <button
+                key={n}
+                onClick={() => !readonly && onUpdate({ ...card, rating: card.rating === n ? n - 1 : n })}
+                className="w-3 h-3 rounded-full border border-stone-400
+                           transition-colors cursor-pointer"
+                style={{ backgroundColor: n <= card.rating ? '#B8860B' : 'transparent' }}
+                aria-label={`Rate ${n}`}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Ruled lines */}
-      <div className="flex-1 border-t border-stone-200 pt-1 overflow-y-auto">
+      {/* Task lines */}
+      <div className="flex-1 overflow-y-auto">
         <SortableContext items={card.tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-          {card.tasks.map((task, i) => (
+          {card.tasks.map((task) => (
             <TaskLine
               key={task.id}
               task={task}
-              lineNum={i + 1}
               onUpdate={updateTask}
               readonly={readonly}
             />
@@ -94,17 +96,12 @@ export default function Card({ card, onUpdate, readonly }: CardProps) {
         {!readonly && card.type !== 'today' && (
           <button
             onClick={addLine}
-            className="text-[10px] text-stone-300 hover:text-stone-500 mt-1 ml-6
+            className="text-xs text-stone-300 hover:text-stone-500 mt-2 ml-10
                        transition-colors cursor-pointer"
           >
             + add line
           </button>
         )}
-      </div>
-
-      {/* Date footer */}
-      <div className="text-[9px] text-stone-300 text-right mt-1 font-mono">
-        {card.date}
       </div>
     </div>
   );
